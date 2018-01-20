@@ -2,7 +2,7 @@
     "mongodb": {
         "uri_str": "mongodb://localhost:27017",
         "db_name": "mqttdb",
-        "coll_name": "store"
+        "coll_name": "topicsdb"
     },
     "mosquitto": {
         "mqtt_host": "localhost",

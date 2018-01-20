@@ -1,10 +1,14 @@
-SRC := src
-CFLAGS := -Ilib `pkg-config  --cflags libmongoc-1.0`
+PWD := `pwd`
+SRC := ${PWD}/src
+CFLAGS := -Ilib `pkg-config  --cflags libmongoc-1.0`\
+	-I${PWD}/inc
 LFLAGS := -lmongoc-1.0 -lbson-1.0 `pkg-config  --libs libmongoc-1.0`\
 	 -lmosquitto
 CC := gcc
 
 MQTT_STORE_SRC := src/store/main.c\
+	src/store/mongodb.c\
+	src/store/mosquitto.c\
 	lib/parson/parson.c
 MQTT_SEND_SRC := src/send/main.c\
 	lib/parson/parson.c
