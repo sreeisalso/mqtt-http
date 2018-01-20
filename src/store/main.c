@@ -14,6 +14,7 @@ typedef struct config_s
     mongoc_database_t *database;
     mongoc_client_t *client;
     mongoc_collection_t *collection;
+    struct mosquitto *mosquitto;
 } config_t;
 
 static int mongodb_init(JSON_Object *monogodb_config, config_t *config)
@@ -66,15 +67,52 @@ static void mongodb_destroy(config_t *config)
     mongoc_client_destroy(config->client);
     mongoc_cleanup();
 }
-static void mosquitto_init(JSON_Object *monogodb_config)
+static void connect_callback(struct mosquitto *mosq, void *obj, int result)
 {
+    printf("connected to mosquitto server\n");
 }
+static void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
+{
+    printf("Storing:%s:%s\n", message->topic, message->payload);
+    mongodb_insert_or_update((config_t *)obj, message->topic, message->payload);
+}
+
+static int mosquitto_init(JSON_Object *mosquitto_config, config_t *config)
+{
+    struct mosquitto *mosquitto = NULL;
+    const char *_client_id = json_object_get_string(mosquitto_config, "client_id");
+    const char *mqtt_host = json_object_get_string(mosquitto_config, "mqtt_host");
+    double mqtt_port = json_object_get_number(mosquitto_config, "mqtt_port");
+    char client_id[32];
+    int rc = 0;
+    memset(client_id, 0, 32);
+    snprintf(client_id, 31, _client_id, getpid());
+    mosquitto_lib_init();
+    mosquitto = mosquitto_new(client_id, true, config);
+    config->mosquitto = mosquitto;
+    if (mosquitto)
+    {
+        mosquitto_connect_callback_set(mosquitto, connect_callback);
+        mosquitto_message_callback_set(mosquitto, message_callback);
+        rc = mosquitto_connect(mosquitto, mqtt_host, mqtt_port, 60);
+        rc = mosquitto_subscribe(mosquitto, NULL, "#", 0);
+        if (rc)
+        {
+            stop = 1;
+            return 2;
+        }
+    }
+    else
+        return 1;
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     JSON_Value *file = NULL;
     JSON_Object *jconfig = NULL;
-    JSON_Object *mosquitto = NULL;
     JSON_Object *mongodb = NULL;
+    JSON_Object *mosquitto = NULL;
     config_t config;
     int rc = 0;
 
@@ -101,29 +139,39 @@ int main(int argc, char *argv[])
         mongodb = json_object_dotget_object(jconfig, "mongodb");
         rc = mongodb_init(mongodb, &config);
         if (rc)
+        {
             printf("Invalid mongodb config, rc = %d\n", rc);
+            return 1;
+        }
     }
     else
     {
         printf("Please provide mongodb configs\n");
-        return -1;
+        return 2;
     }
 
     if (json_object_has_value(jconfig, "mosquitto"))
     {
         mosquitto = json_object_dotget_object(jconfig, "mosquitto");
-        mosquitto_init(mosquitto);
+        rc = mosquitto_init(mosquitto, &config);
+        if (rc)
+        {
+            printf("Invalid mosquitto config, rc = %d\n", rc);
+            return 3;
+        }
     }
     else
     {
         printf("Please provide mosquitto configs\n");
-        return -1;
+        return 4;
     }
     while (!stop)
     {
         //do the actula work here
-        sleep(1);
+        rc = mosquitto_loop(config.mosquitto, -1, 1);
     }
     mongodb_insert_or_update(&config, "/hello", "world23");
     mongodb_destroy(&config);
+    mosquitto_destroy(config.mosquitto);
+    mosquitto_lib_cleanup();
 }

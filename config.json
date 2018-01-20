@@ -4,5 +4,9 @@
         "db_name": "mqttdb",
         "coll_name": "store"
     },
-    "mosquitto": ""
+    "mosquitto": {
+        "mqtt_host": "localhost",
+        "mqtt_port": 1883,
+        "client_id": "mqtt-http-%d"
+    }
 }

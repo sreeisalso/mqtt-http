@@ -1,6 +1,7 @@
 SRC := src
 CFLAGS := -Ilib `pkg-config  --cflags libmongoc-1.0`
-LFLAGS := -lmongoc-1.0 -lbson-1.0 `pkg-config  --libs libmongoc-1.0`
+LFLAGS := -lmongoc-1.0 -lbson-1.0 `pkg-config  --libs libmongoc-1.0`\
+	 -lmosquitto
 CC := gcc
 
 MQTT_STORE_SRC := src/store/main.c\
