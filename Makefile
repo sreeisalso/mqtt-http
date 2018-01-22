@@ -13,10 +13,13 @@ MQTT_STORE_SRC := src/store/main.c\
 MQTT_SEND_SRC := src/send/main.c\
 	lib/parson/parson.c
 
+.PHONY: all mqtt_send
 all: mqtt_store mqtt_send
 
-mqtt_send: ${MQTT_SEND_SRC}
-	${CC} ${CFLAGS} ${MQTT_SEND_SRC} -o mqtt_send ${LFLAGS}
+mqtt_send:
+	cd ${PWD}/src/send && npm install
+	ln -sf ${PWD}/src/send/mqtt_send.sh mqtt_send
+	chmod a+x mqtt_send
 
 mqtt_store: ${MQTT_STORE_SRC}
 	${CC} ${CFLAGS} ${MQTT_STORE_SRC} -o mqtt_store ${LFLAGS}
