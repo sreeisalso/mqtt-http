@@ -1,0 +1,12 @@
+{
+    "mongodb": {
+        "uri_str": "mongodb://localhost:27017",
+        "db_name": "mqttdb",
+        "coll_name": "topicsdb"
+    },
+    "mosquitto": {
+        "mqtt_host": "localhost",
+        "mqtt_port": 1883,
+        "client_id": "mqtt-http-%d"
+    }
+}
